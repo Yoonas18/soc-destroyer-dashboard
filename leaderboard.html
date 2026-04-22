@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SOC Destroyer Leaderboard</title>
+
+<style>
+body {
+  background: #0D1117;
+  color: #00FF41;
+  font-family: monospace;
+  margin: 0;
+}
+
+h1 {
+  text-align: center;
+  padding: 20px;
+  text-shadow: 0 0 12px #00FF41;
+}
+
+#controls {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+select {
+  background: black;
+  color: #00FF41;
+  border: 1px solid #00FF41;
+  padding: 5px;
+}
+
+table {
+  width: 90%;
+  margin: auto;
+  border-collapse: collapse;
+  font-size: 18px;
+}
+
+th, td {
+  border: 1px solid #00FF41;
+  padding: 12px;
+  text-align: center;
+}
+
+th {
+  background: #001a00;
+}
+
+.top1 { background: gold; color: black; }
+.top2 { background: silver; color: black; }
+.top3 { background: #cd7f32; color: black; }
+
+.flash {
+  animation: flash 0.5s;
+}
+
+@keyframes flash {
+  from { background: red; }
+  to { background: transparent; }
+}
+</style>
+</head>
+
+<body>
+
+<h1>⚡ SOC DESTROYER LIVE DASHBOARD ⚡</h1>
+
+<div id="controls">
+  Filter Scenario:
+  <select id="scenarioFilter">
+    <option value="ALL">ALL</option>
+    <option value="S1">S1</option>
+    <option value="S2">S2</option>
+    <option value="S3">S3</option>
+  </select>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Team</th>
+<th>Score</th>
+<th>Time</th>
+<th>Scenario</th>
+</tr>
+</thead>
+<tbody id="board"></tbody>
+</table>
+
+<script>
+
+const API = "https://opensheet.elk.sh/1nuy8YfBMXqAdEZb_j7luNSvJhDcv-FwC8mivydVr13w/Sheet1";
+
+let previous = {};
+
+async function loadData() {
+  const res = await fetch(API);
+  const data = await res.json();
+
+  let filter = document.getElementById("scenarioFilter").value;
+
+  let filtered = data.filter(r => r.TeamID && r.Total);
+
+  if (filter !== "ALL") {
+    filtered = filtered.filter(r => r.Scenario === filter);
+  }
+
+  filtered.sort((a,b) => b.Total - a.Total || a.Time.localeCompare(b.Time));
+
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+
+  filtered.forEach((row, i) => {
+
+    let cls = "";
+    if (i === 0) cls = "top1";
+    else if (i === 1) cls = "top2";
+    else if (i === 2) cls = "top3";
+
+    let flash = "";
+    if (previous[row.TeamID] && previous[row.TeamID] != row.Total) {
+      flash = "flash";
+    }
+
+    previous[row.TeamID] = row.Total;
+
+    board.innerHTML += `
+      <tr class="${cls} ${flash}">
+        <td>${i+1}</td>
+        <td>${row.TeamName}</td>
+        <td>${row.Total}</td>
+        <td>${row.Time}</td>
+        <td>${row.Scenario}</td>
+      </tr>
+    `;
+  });
+}
+
+document.getElementById("scenarioFilter").addEventListener("change", loadData);
+
+setInterval(loadData, 3000);
+loadData();
+
+</script>
+
+</body>
+</html>
